@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.7)
+
+project(2048)
+
+# Add SDL2 CMake modules
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
+
+INCLUDE(FindPkgConfig)
+
+find_package(SDL2 CONFIG REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
+
+PKG_SEARCH_MODULE(SDL2_IMAGE CONFIG REQUIRED SDL2_image>=2.0.0)
+include_directories(${SDL2_IMAGE_INCLUDE_DIRS})
+
+PKG_SEARCH_MODULE(SDL2_MIXER CONFIG REQUIRED SDL2_mixer>=2.0.0)
+include_directories(${SDL2_MIXER_INCLUDE_DIRS})
+
+PKG_SEARCH_MODULE(SDL2_TTF REQUIRED SDL2_ttf>=2.0.0)
+include_directories(${SDL2_TTF_INCLUDE_DIRS})
+
+file(GLOB SOURCES "src/*.c*")
+add_executable(${PROJECT_NAME} ${SOURCES})
+
+target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES} ${SDL2_TTF_LIBRARIES})

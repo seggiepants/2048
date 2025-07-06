@@ -1,0 +1,8 @@
+cmake
+CMakeFiles
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+*.o
+res/font/*
+2048
