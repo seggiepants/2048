@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include "Board.h"
+#include "Draw.h"
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
@@ -18,36 +19,6 @@ enum GameState {
     WIN,
     LOSE
 };
-
-void DrawMessage(SDL_Renderer* render, TTF_Font* font, std::string message)
-{
-    struct SDL_Color black = {0, 0, 0, 255};
-    struct SDL_Color white = {255, 255, 255, 255};
-    struct SDL_Rect r;
-    SDL_SetRenderDrawColor(render, black.r, black.g, black.b, black.a);
-    
-    SDL_Surface* surface = TTF_RenderText_Solid(font, message.c_str(), black);
-    if (surface != nullptr)
-    {
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(render, surface);
-        if (texture != nullptr)
-        {
-            int screenW, screenH;
-            if (SDL_GetRendererOutputSize(render, &screenW, &screenH) == 0)
-            {
-                int targetX = (screenW - surface->w) / 2;
-                int targetY = (screenH - surface->h) / 2;                
-                SDL_Rect r = {targetX, targetY, surface->w, surface->h};
-                SDL_SetRenderDrawColor(render, white.r, white.g, white.b, white.a);
-                SDL_RenderFillRect(render, &r);
-                
-                SDL_RenderCopy(render, texture, nullptr, &r);
-            }
-        }
-        SDL_DestroyTexture(texture);
-        SDL_FreeSurface(surface);
-    }            
-}
 
 void Draw(SDL_Renderer* render, TTF_Font* font, GameState state, Board* board)
 {

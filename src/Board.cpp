@@ -4,6 +4,7 @@
 #include <tuple>
 #include <SDL_render.h>
 #include "Board.h"
+#include "Draw.h"
 
 Board::Board()
 {
@@ -73,8 +74,12 @@ bool Board::IsFull()
 
 void Board::Draw(SDL_Renderer* render, TTF_Font* font, int x, int y, int w, int h)
 {
-    struct SDL_Color current;
-    struct SDL_Rect r;
+    SDL_Color current;
+    SDL_Rect r;
+    SDL_Color face = {127, 127, 127, 255};
+    SDL_Color shadow = {32, 32, 32, 255};
+    SDL_Color highLight = {224, 224, 224, 255};
+
     SDL_GetRenderDrawColor(render, &current.r, &current.g, &current.b, &current.a);
     SDL_SetRenderDrawColor(render, black.r, black.g, black.b, black.a);
     r.x = x;
@@ -96,6 +101,11 @@ void Board::Draw(SDL_Renderer* render, TTF_Font* font, int x, int y, int w, int 
     {
         for(int i = 0; i < BOARD_SIZE; i++)
         {
+            if (board[j][i] != EMPTY_SQUARE)
+            {
+                SDL_Rect tileRect = {x + (stepX * i) + 1, y + (stepY * j) + 1, stepX - 2, stepY - 2};
+                DrawTile(render, tileRect, face, highLight, shadow);
+            }
             temp = this->board[j][i] == EMPTY_SQUARE ? "" : std::to_string(this->board[j][i]);
             SDL_Surface* surface = TTF_RenderText_Solid(font, temp.c_str(), white);
             if (surface != nullptr)
