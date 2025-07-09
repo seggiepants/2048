@@ -1,6 +1,5 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
-
 #include <vector>
 #include <SDL.h>
 #include <SDL_ttf.h>

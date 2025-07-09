@@ -1,11 +1,14 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <list>
 #include <string>
 #include <SDL.h>
+#include <SDL_image.h>
 #include <SDL_ttf.h>
 #include "Board.h"
 #include "Draw.h"
+#include "Particle.h"
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
@@ -20,7 +23,7 @@ enum GameState {
     LOSE
 };
 
-void Draw(SDL_Renderer* render, TTF_Font* font, GameState state, Board* board)
+void Draw(SDL_Renderer* render, TTF_Font* font, SDL_Texture* tiles, GameState state, Board* board, std::list<Particle*>* particles)
 {
     const int pad = 4;
     struct SDL_Color white = {255, 255, 255, 255};
@@ -51,8 +54,19 @@ void Draw(SDL_Renderer* render, TTF_Font* font, GameState state, Board* board)
         rect.w = rect.h;
         rect.x = (screenW - rect.w) / 2;
 
+        
         SDL_SetRenderDrawColor(render, white.r, white.g, white.b, white.a);
         board->Draw(render, font, rect.x, rect.y, rect.w, rect.h);
+        
+        SDL_Rect rParticle = {0, 0, 16, 16}; // ZZZ hard coded :(
+        SDL_Rect rDest = {0, 0, 16, 16};
+        for(std::list<Particle*>::iterator iter = particles->begin(); iter != particles->end(); iter++)
+        {
+            rDest.x = (*iter)->x;
+            rDest.y = (*iter)->y;
+            SDL_RenderCopy(render, tiles, &rParticle, &rDest);
+        }
+
         if (state == PAUSED)
             DrawMessage(render, font, "PAUSED");
         else if (state == LOSE)
@@ -86,18 +100,38 @@ int main(int argc, char *argv[])
     );
     SDL_SetWindowResizable(window, SDL_FALSE);
     
-    TTF_Font* font = TTF_OpenFont("res/font/Bitstream Vera Sans Mono Bold.ttf", 25);
-    
+    TTF_Font* font = TTF_OpenFont("res/font/Bitstream Vera Sans Mono Bold.ttf", 25);    
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Texture* tiles = IMG_LoadTexture(renderer, "res/img/tiles.png");
     bool running = true;
     SDL_Event event;
     unsigned int time = SDL_GetTicks();
     Board* board = new Board();
     GameState state = PLAYING;
+    std::list<Particle*> particles;
+    unsigned int previous = SDL_GetTicks() - 16; // -16 to make sure we have a non-zero delta time.
     while (running)
     {
         bool moved = false;
         unsigned int now = SDL_GetTicks();
+        float dt = static_cast<float>(now) - static_cast<float>(previous);
+        previous = now;
+
+        // Update and remove dead particles.
+        std::list<Particle*>::iterator iter = particles.begin();
+        while (iter != particles.end())
+        {
+            (*iter)->Update(dt, SCREEN_WIDTH, SCREEN_HEIGHT);
+            if (!(*iter)->IsAlive())
+            {
+                delete (*iter);
+                particles.erase(iter++);
+            }
+            else
+            {
+                iter++;
+            }
+        }
 
         if (SDL_PollEvent(&event) != 0)
         { 
@@ -105,6 +139,14 @@ int main(int argc, char *argv[])
             {
                 case SDL_QUIT:
                     running = false;
+                    break;
+                case SDL_MOUSEMOTION:
+                    {
+                        int mouseX = event.motion.x;
+                        int mouseY = event.motion.y;
+                        Particle* p = new Particle(mouseX - 8, mouseY - 8);
+                        particles.push_back(p);
+                    }
                     break;
                 case SDL_KEYDOWN:
                     break;
@@ -165,7 +207,7 @@ int main(int argc, char *argv[])
                 state = LOSE;
             }
         }
-        Draw(renderer, font, state, board);
+        Draw(renderer, font, tiles, state, board, &particles);
         int ticks = now - time;
         if (ticks < SCREEN_TICKS_PER_FRAME)
         {
@@ -174,9 +216,18 @@ int main(int argc, char *argv[])
         }
         time = now;
     }
+
+    std::list<Particle*>::iterator iter = particles.begin();
+    while (iter != particles.end())
+    {
+        delete (*iter);
+    }
+    particles.clear();
+
     delete board;
-    TTF_CloseFont(font);
+    TTF_CloseFont(font);    
     TTF_Quit();
+    SDL_DestroyTexture(tiles);
     SDL_DestroyWindow(window);
     SDL_Quit();
 

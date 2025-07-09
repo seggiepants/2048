@@ -152,7 +152,6 @@ std::vector<int>* Board::CombineTiles(std::vector<int>& column)
     {
         combinedTiles.push_back(EMPTY_SQUARE);
     }
-
     for(int i = 0; i < BOARD_SIZE - 1; i++)
     {
         if (combinedTiles[i] == combinedTiles[i + 1] && combinedTiles[i] != EMPTY_SQUARE)
