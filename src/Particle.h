@@ -5,6 +5,7 @@
 
 #define LIFETIME_MAX 1000
 #define SPEED_MAX 300
+#define PARTICLE_SIZE 16
 
 class Particle
 {

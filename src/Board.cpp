@@ -5,6 +5,7 @@
 #include <SDL_render.h>
 #include "Board.h"
 #include "Draw.h"
+#include "Tile.h"
 
 Board::Board()
 {
@@ -19,9 +20,9 @@ void Board::AddNewTwos(int count)
         int x = rand() % BOARD_SIZE;
         int y = rand() % BOARD_SIZE;
 
-        if (this->board[y][x] == EMPTY_SQUARE)
+        if (this->board[y][x].value == EMPTY_SQUARE)
         {
-            this->board[y][x] = 2;
+            this->board[y][x].value = 2;
             countRemaining--;
         }
     }
@@ -48,7 +49,7 @@ bool Board::HasWon()
     {
         for(int x = 0; x < BOARD_SIZE; x++)
         {
-            if (this->board[y][x] >= 2048)
+            if (this->board[y][x].value >= 2048)
             {
                 return true;
             }
@@ -63,7 +64,7 @@ bool Board::IsFull()
     {
         for(int x = 0; x < BOARD_SIZE; x++)
         {
-            if (this->board[y][x] == EMPTY_SQUARE)
+            if (this->board[y][x].value == EMPTY_SQUARE)
             {
                 return false;
             }
@@ -101,12 +102,12 @@ void Board::Draw(SDL_Renderer* render, TTF_Font* font, int x, int y, int w, int 
     {
         for(int i = 0; i < BOARD_SIZE; i++)
         {
-            if (board[j][i] != EMPTY_SQUARE)
+            if (board[j][i].value != EMPTY_SQUARE)
             {
                 SDL_Rect tileRect = {x + (stepX * i) + 1, y + (stepY * j) + 1, stepX - 2, stepY - 2};
                 DrawTile(render, tileRect, face, highLight, shadow);
             }
-            temp = this->board[j][i] == EMPTY_SQUARE ? "" : std::to_string(this->board[j][i]);
+            temp = this->board[j][i].value == EMPTY_SQUARE ? "" : std::to_string(this->board[j][i].value);
             SDL_Surface* surface = TTF_RenderText_Solid(font, temp.c_str(), white);
             if (surface != nullptr)
             {
@@ -247,9 +248,9 @@ int Board::Score()
     {
         for(int x = 0; x < BOARD_SIZE; x++)
         {
-            if (this->board[y][x] != EMPTY_SQUARE)
+            if (this->board[y][x].value != EMPTY_SQUARE)
             {
-                score+= board[y][x];
+                score+= board[y][x].value;
             }
         }
     }
