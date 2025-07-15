@@ -3,6 +3,7 @@
 #define __TILE_H__
 
 #include <list>
+#include "Audio.h"
 #include "Particle.h"
 
 enum AnimationCompleteAction 
@@ -17,7 +18,7 @@ public:
     Tile();
     void Animate(AnimationCompleteAction action, float targetX, float targetY);
     bool IsMoving() { return animate; };
-    void Update(float dt, Board* board, std::list<Particle*>* particles);    
+    void Update(float dt, Board* board, std::list<Particle*>* particles, Audio* audio);    
     int GetX() { return static_cast<int> (this->x);};
     int GetY() { return static_cast<int> (this->y);};
     void SetLocation(float x, float y) { this->x = x; this->y = y;};

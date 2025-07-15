@@ -6,6 +6,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include "Audio.h"
 #include "Board.h"
 #include "Draw.h"
 #include "Particle.h"
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
     TTF_Font* font = TTF_OpenFont("res/font/Bitstream Vera Sans Mono Bold.ttf", 25);    
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_Texture* tiles = IMG_LoadTexture(renderer, "res/img/tiles.png");
+    Audio* audio = new Audio();
     bool running = true;
     SDL_Event event;
     unsigned int time = SDL_GetTicks();
@@ -153,6 +155,17 @@ int main(int argc, char *argv[])
                 case SDL_KEYUP:
                     switch(event.key.keysym.sym)
                     {
+                        case SDLK_m:
+                            audio->ToggleMute();
+                            break;
+                        
+                        case SDLK_n:
+                            if (board->HasWon() || board->IsFull())
+                            {
+                                board->NewGame();
+                                state = PLAYING;
+                            }
+                            break;
                         case SDLK_LEFT:
                             if (state == PLAYING && !board->IsAnimating())
                             {
@@ -205,7 +218,7 @@ int main(int argc, char *argv[])
             state = LOSE;
         }
                 
-        board->Update(dt / 1000.0f, &particles);
+        board->Update(dt / 1000.0f, &particles, audio);
         Draw(renderer, font, tiles, state, board, &particles);
         int ticks = now - time;
         if (ticks < SCREEN_TICKS_PER_FRAME)
@@ -224,6 +237,7 @@ int main(int argc, char *argv[])
     particles.clear();
 
     delete board;
+    delete audio;
     TTF_CloseFont(font);    
     TTF_Quit();
     SDL_DestroyTexture(tiles);

@@ -24,7 +24,7 @@ void Tile::Animate(AnimationCompleteAction action, float targetX, float targetY)
     this->animate = true;
 }
 
-void Tile::Update(float dt, Board* board, std::list<Particle*>* particles)
+void Tile::Update(float dt, Board* board, std::list<Particle*>* particles, Audio* audio)
 {
     // Only update if animating.
     if (this->animate)
@@ -68,6 +68,9 @@ void Tile::Update(float dt, Board* board, std::list<Particle*>* particles)
             this->x = targetX;
             this->y = targetY;
             this->animate = false;
+            
+            if (this->action != NONE)
+                audio->RandomBeep();
 
             if (this->action != NONE)
             {

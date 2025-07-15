@@ -318,7 +318,7 @@ int Board::Score()
     return score;
 }
 
-void Board::Update(float dt, std::list<Particle*>* particles)
+void Board::Update(float dt, std::list<Particle*>* particles, Audio* audio)
 {
     for(int y = 0; y < BOARD_SIZE; y++)
     {
@@ -326,7 +326,7 @@ void Board::Update(float dt, std::list<Particle*>* particles)
         {
             if (this->board[y][x].IsMoving())
             {
-                board[y][x].Update(dt, this, particles);
+                board[y][x].Update(dt, this, particles, audio);
             }
         }
     }

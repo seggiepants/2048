@@ -3,6 +3,7 @@
 #include <vector>
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include "Audio.h"
 #include "Tile.h"
 
 #define BOARD_SIZE 4
@@ -29,7 +30,7 @@ class Board
         void NewGame();
         int Score();
         void Set(int x, int y, int value) { board[y][x].value = value;}
-        void Update(float dt, std::list<Particle*>* particles);
+        void Update(float dt, std::list<Particle*>* particles, Audio* audio);
     private:
         void GetCellIndex(Tile* tile, int* i, int* j);
         Tile board[BOARD_SIZE][BOARD_SIZE];
