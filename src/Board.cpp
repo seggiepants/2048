@@ -38,6 +38,7 @@ void Board::Clear()
 
         for(int x = 0; x < BOARD_SIZE; x++)
         {
+            this->next[y][x] = EMPTY_SQUARE;
             this->Set(x, y, EMPTY_SQUARE);
         }
     }
@@ -56,6 +57,22 @@ bool Board::HasWon()
         }
     }
     return false;
+}
+
+bool Board::IsAnimating()
+{
+    for(int y = 0; y < BOARD_SIZE; y++)
+    {
+        for(int x = 0; x < BOARD_SIZE; x++)
+        {
+            if (this->board[y][x].IsMoving())
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+
 }
 
 bool Board::IsFull()
@@ -98,32 +115,44 @@ void Board::Draw(SDL_Renderer* render, TTF_Font* font, int x, int y, int w, int 
         SDL_RenderDrawLine(render, r.x, r.y + stepY * i, r.x + r.w - 1, r.y + stepY * i - 1);
     }
     std::string temp;
+    bool anyTileMoving = this->IsAnimating();
     for(int j = 0; j < BOARD_SIZE; j++)
     {
         for(int i = 0; i < BOARD_SIZE; i++)
         {
+            if (!anyTileMoving)
+            {
+                board[j][i].SetLocation(static_cast<float> (x + (stepX * i) + 1), static_cast<float>(y + (stepY * j) + 1));
+                board[j][i].SetSize(stepX - 2, stepY - 2);
+            }
+
             if (board[j][i].value != EMPTY_SQUARE)
             {
-                SDL_Rect tileRect = {x + (stepX * i) + 1, y + (stepY * j) + 1, stepX - 2, stepY - 2};
+                // Don't draw if a tile that should dissappear, when it is done animating but everything isn't yet.
+                if (anyTileMoving && !board[j][i].IsMoving() && board[j][i].action == DESTROY)
+                    continue; 
+                //SDL_Rect tileRect = {x + (stepX * i) + 1, y + (stepY * j) + 1, stepX - 2, stepY - 2};
+                SDL_Rect tileRect = {board[j][i].GetX(), board[j][i].GetY(), stepX - 2, stepY - 2};
                 DrawTile(render, tileRect, face, highLight, shadow);
-            }
-            temp = this->board[j][i].value == EMPTY_SQUARE ? "" : std::to_string(this->board[j][i].value);
-            SDL_Surface* surface = TTF_RenderText_Solid(font, temp.c_str(), white);
-            if (surface != nullptr)
-            {
-                SDL_Texture* texture = SDL_CreateTextureFromSurface(render, surface);
-                if (texture != nullptr)
+
+                temp = this->board[j][i].value == EMPTY_SQUARE ? "" : std::to_string(this->board[j][i].value);
+                SDL_Surface* surface = TTF_RenderText_Solid(font, temp.c_str(), white);
+                if (surface != nullptr)
                 {
-                    int targetX = x + (stepX * i);
-                    targetX += ((stepX - surface->w) / 2);
-                    int targetY = y + (stepY * j);
-                    targetY += ((stepY - surface->h) / 2);
-                    SDL_Rect texture_rect = {targetX, targetY, surface->w, surface->h};
-                    SDL_RenderCopy(render, texture, nullptr, &texture_rect);
-                }
-                SDL_DestroyTexture(texture);
-                SDL_FreeSurface(surface);
-            }            
+                    SDL_Texture* texture = SDL_CreateTextureFromSurface(render, surface);
+                    if (texture != nullptr)
+                    {
+                        int targetX = board[j][i].GetX(); //x + (stepX * i);
+                        targetX += ((stepX - surface->w) / 2);
+                        int targetY = board[j][i].GetY(); //y + (stepY * j);
+                        targetY += ((stepY - surface->h) / 2);
+                        SDL_Rect texture_rect = {targetX, targetY, surface->w, surface->h};
+                        SDL_RenderCopy(render, texture, nullptr, &texture_rect);
+                    }
+                    SDL_DestroyTexture(texture);
+                    SDL_FreeSurface(surface);
+                }            
+            }
         }
     }
 
@@ -131,7 +160,7 @@ void Board::Draw(SDL_Renderer* render, TTF_Font* font, int x, int y, int w, int 
     SDL_SetRenderDrawColor(render, current.r, current.g, current.b, current.a);
 }
 
-std::vector<int>* Board::CombineTiles(std::vector<int>& column)
+void Board::CombineTiles(std::vector<Tile*>& column, std::vector<int>& columnNext)
 {
     /*
     The column is a list of four tiles, Index 0 is the "bottom" or 
@@ -141,31 +170,64 @@ std::vector<int>* Board::CombineTiles(std::vector<int>& column)
     */
 
     // Copy on the numbers (not blanks) from column to combinedTiles
-    std::vector<int> combinedTiles; // A list of the non-blank tiles in column.        
-    for(int item : column)
+    std::vector<Tile*> combinedTiles; // A list of the non-blank tiles in column.
+    int index = 0;  
+    /*
+    std::vector<std::tuple<int, int>> xy = {
+        {column[0]->GetX(), column[0]->GetY()},
+        {column[1]->GetX(), column[1]->GetY()},
+        {column[2]->GetX(), column[2]->GetY()},
+        {column[3]->GetX(), column[3]->GetY()}
+    };
+    */
+
+    for(int i = 0; i < column.size(); i++)
     {
-        if (item != EMPTY_SQUARE)
+        Tile* item = column[i];
+        if (item->value != EMPTY_SQUARE)
         {
             combinedTiles.push_back(item);
+            Tile* target = column[index];
+            columnNext[index] = column[i]->value;
+            index++;
+            //item->Animate(NONE, std::get<0>(xy[index]), std::get<1>(xy[index]));
+            item->Animate(NONE, target->GetX(), target->GetY());
         }
     }
-    while (combinedTiles.size() < BOARD_SIZE)
+    for(int i = 0; i < column.size(); i++)
     {
-        combinedTiles.push_back(EMPTY_SQUARE);
+        Tile* item = column[i];
+        if (item->value == EMPTY_SQUARE)
+        {
+            combinedTiles.push_back(column[i]);
+            columnNext[index] = column[i]->value;
+            index++;
+        }
     }
+
     for(int i = 0; i < BOARD_SIZE - 1; i++)
     {
-        if (combinedTiles[i] == combinedTiles[i + 1] && combinedTiles[i] != EMPTY_SQUARE)
+        
+        if (columnNext[i] == columnNext[i + 1] && columnNext[i] != EMPTY_SQUARE)
         {
-            combinedTiles[i] *= 2;
+            columnNext[i] *= 2;
+            combinedTiles[i]->Animate(DOUBLE, combinedTiles[i]->GetX(), combinedTiles[i]->GetY()); //std::get<0>(xy[i]), std::get<1>(xy[i])); 
+            //combinedTiles[i + 1]->Animate(DESTROY, std::get<0>(xy[i]), std::get<1>(xy[i])); //combinedTiles[i]->GetX(), combinedTiles[i]->GetY());
             for(int above = i + 1; above < BOARD_SIZE - 1; above++)
-            {
-                combinedTiles[above] = combinedTiles[above + 1];
+            {                
+                columnNext[above] = columnNext[above + 1];
+                if (columnNext[above] == EMPTY_SQUARE)
+                    continue;
+                //if (above != i + 1)
+                    combinedTiles[above+1]->Animate(NONE, combinedTiles[above]->GetX(), combinedTiles[above]->GetY()); //std::get<0>(xy[above]), std::get<1>(xy[above])); 
             }
-            combinedTiles[BOARD_SIZE - 1] = EMPTY_SQUARE;
+            columnNext[BOARD_SIZE - 1] = EMPTY_SQUARE;
+            if (combinedTiles[BOARD_SIZE - 1]->value != EMPTY_SQUARE)
+            {
+                combinedTiles[BOARD_SIZE - 1]->Animate(NONE, combinedTiles[BOARD_SIZE - 2]->GetX(), combinedTiles[BOARD_SIZE - 2]->GetY()); //std::get<0>(xy[BOARD_SIZE - 2]), std::get<1>(xy[BOARD_SIZE - 2])); 
+            }
         }
-    }
-    return new std::vector<int>(combinedTiles.begin(), combinedTiles.end());    
+    }    
 }
 
 void Board::Move(Direction dir)
@@ -201,9 +263,15 @@ void Board::Move(Direction dir)
                             {{3, 3}, {2, 3}, {1, 3}, {0, 3}}};
     }
 
-    // ZZZ - More!
-    Board* next = new Board();
-    next->Clear();
+    // Clear the next board state.
+    for(int y = 0; y < BOARD_SIZE; y++)
+    {
+        for(int x = 0; x < BOARD_SIZE; x++)
+        {
+            this->next[y][x] = EMPTY_SQUARE;
+        }
+    }
+
     for(std::vector<std::tuple<int, int>> row : allColumnsSpaces)
     {
         std::tuple<int, int> first = row[0];
@@ -211,32 +279,25 @@ void Board::Move(Direction dir)
         std::tuple<int, int> third = row[2];
         std::tuple<int, int> fourth = row[3];
 
-        std::vector<int> column(BOARD_SIZE);
-        column[0] = this->Get((std::get<0>(first)), (std::get<1>(first)));
-        column[1] = this->Get((std::get<0>(second)), (std::get<1>(second)));
-        column[2] = this->Get((std::get<0>(third)), (std::get<1>(third)));
-        column[3] = this->Get((std::get<0>(fourth)), (std::get<1>(fourth)));
-        std::vector<int>* combined = this->CombineTiles(column);
+        std::vector<Tile*> column(BOARD_SIZE);
+        std::vector<int> columnNext(BOARD_SIZE);
+        column[0] = &this->board[std::get<1>(first)][std::get<0>(first)]; 
+        column[1] = &this->board[std::get<1>(second)][std::get<0>(second)];
+        column[2] = &this->board[std::get<1>(third)][std::get<0>(third)];
+        column[3] = &this->board[std::get<1>(fourth)][std::get<0>(fourth)];
+        this->CombineTiles(column, columnNext);
 
-        next->Set(std::get<0>(first), std::get<1>(first), (*combined)[0]);
-        next->Set(std::get<0>(second), std::get<1>(second), (*combined)[1]);
-        next->Set(std::get<0>(third), std::get<1>(third), (*combined)[2]);
-        next->Set(std::get<0>(fourth), std::get<1>(fourth), (*combined)[3]);
-        delete combined;
+        this->next[std::get<1>(first)][std::get<0>(first)] = columnNext[0];
+        this->next[std::get<1>(second)][std::get<0>(second)] = columnNext[1];
+        this->next[std::get<1>(third)][std::get<0>(third)] = columnNext[2];
+        this->next[std::get<1>(fourth)][std::get<0>(fourth)] = columnNext[3];
     }
-
-    for(int y = 0; y < BOARD_SIZE; y++)
-    {
-        for(int x = 0; x < BOARD_SIZE;x++)
-        {
-            this->Set(x, y, next->Get(x, y));
-        }
-    }
-    delete next;
+    this->swap = this->IsAnimating();
 }
 
 void Board::NewGame()
 {
+    swap = false;
     this->Clear();
     this->AddNewTwos(2);
 }
@@ -255,4 +316,46 @@ int Board::Score()
         }
     }
     return score;
+}
+
+void Board::Update(float dt, std::list<Particle*>* particles)
+{
+    for(int y = 0; y < BOARD_SIZE; y++)
+    {
+        for(int x = 0; x < BOARD_SIZE; x++)
+        {
+            if (this->board[y][x].IsMoving())
+            {
+                board[y][x].Update(dt, this, particles);
+            }
+        }
+    }
+    if (!this->IsAnimating() && this->swap)
+    {
+        for(int y = 0; y < BOARD_SIZE; y++)
+        {
+            for(int x = 0; x < BOARD_SIZE; x++)
+            {
+                this->board[y][x].value = this->next[y][x];
+            }
+        }
+        this->swap = false;
+        this->AddNewTwos();
+    }
+}
+
+void Board::GetCellIndex(Tile* tile, int* i, int* j)
+{
+    for(int y = 0; y < BOARD_SIZE; y++)
+    {
+        for(int x = 0; x < BOARD_SIZE; x++)
+        {
+            if (&this->board[y][x] == tile)
+            {
+                *i = x;
+                *j = y;
+                return;
+            }
+        }
+    }
 }

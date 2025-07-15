@@ -154,28 +154,28 @@ int main(int argc, char *argv[])
                     switch(event.key.keysym.sym)
                     {
                         case SDLK_LEFT:
-                            if (state == PLAYING)
+                            if (state == PLAYING && !board->IsAnimating())
                             {
                                 board->Move(LEFT);
                                 moved = true;
                             }
                             break;
                         case SDLK_RIGHT:
-                            if (state == PLAYING)
+                            if (state == PLAYING && !board->IsAnimating())
                             {
                                 board->Move(RIGHT);
                                 moved = true;
                             }
                             break;
                         case SDLK_UP:
-                            if (state == PLAYING)
+                            if (state == PLAYING && !board->IsAnimating())
                             {
                                 board->Move(UP);
                                 moved = true;
                             }
                             break;
                         case SDLK_DOWN:
-                            if (state == PLAYING)
+                            if (state == PLAYING && !board->IsAnimating())
                             {
                                 board->Move(DOWN);
                                 moved = true;
@@ -194,19 +194,18 @@ int main(int argc, char *argv[])
                     break;
             }
         }
-        if (moved)
+        
+        if (board->HasWon())
         {
-            board->AddNewTwos();
-            if (board->HasWon())
-            {
-                state = WIN;
+            state = WIN;
 
-            }
-            else if (board->IsFull())
-            {
-                state = LOSE;
-            }
         }
+        else if (board->IsFull())
+        {
+            state = LOSE;
+        }
+                
+        board->Update(dt / 1000.0f, &particles);
         Draw(renderer, font, tiles, state, board, &particles);
         int ticks = now - time;
         if (ticks < SCREEN_TICKS_PER_FRAME)

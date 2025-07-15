@@ -7,7 +7,7 @@
 
 enum AnimationCompleteAction 
 {
-    DESTROY, DOUBLE
+    DESTROY, DOUBLE, NONE
 };
 class Board;
 
@@ -15,7 +15,7 @@ class Tile
 {
 public:
     Tile();
-    void Animate(AnimationCompleteAction action, float targetX, float targetY, int targetCellX, int targetCellY);
+    void Animate(AnimationCompleteAction action, float targetX, float targetY);
     bool IsMoving() { return animate; };
     void Update(float dt, Board* board, std::list<Particle*>* particles);    
     int GetX() { return static_cast<int> (this->x);};
@@ -23,15 +23,13 @@ public:
     void SetLocation(float x, float y) { this->x = x; this->y = y;};
     void SetSize(int w, int h) { this->w = w; this->h = h;};
     int value; // Number at current cell.
+    AnimationCompleteAction action; // What to do when we get there.
 private:
     bool animate;
-    AnimationCompleteAction action; // What to do when we get there.
     float x;        // Current location.
     float y;
     float targetX;    // LERP to on the screen.
     float targetY;
-    int targetCellX;  // Where to write our doubled value. 
-    int targetCellY;
     int w;
     int h;
 
